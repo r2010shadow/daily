@@ -4,11 +4,11 @@ Tracer - Basic Unit
 .. toctree::
    :maxdepth: 2
 
-   CPU
-   Memory
-   Cache
-   Disk
-   Network
+   CPU/contents
+   Memory/contents
+   Cache/contents
+   Disk/contents
+   Network/contents
 
    
 
