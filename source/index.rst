@@ -10,7 +10,8 @@
    :maxdepth: 2
    :caption: 内容:
 
-   Tracer 
+   Tracer
+   Tracer/index 
 
 Indices and tables
 ==================
