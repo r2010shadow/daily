@@ -11,7 +11,8 @@
    :caption: 内容:
 
    Tracer
-   Tracer/index 
+   Tracer/index
+   Dialog/index 
 
 Indices and tables
 ==================

@@ -1,4 +1,4 @@
-Tracer
+Tracer -  Basic Unit
 =================================
 
 .. toctree::
