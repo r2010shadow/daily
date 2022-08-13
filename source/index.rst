@@ -10,8 +10,6 @@
    :maxdepth: 2
    :caption: 内容:
 
-   Tracer
-   Tracer/index
    Dialog/index 
 
 Indices and tables
