@@ -1,4 +1,4 @@
-## 我们是这样崩的
+# 我们是这样崩的
  
 [我们是这样崩的 (转载)](https://mp.weixin.qq.com/s/nGtC5lBX_Iaj57HIdXq3Qg)
 

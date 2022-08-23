@@ -1,4 +1,4 @@
-
+# 运维工程师如何走得更好更远？
 
 [辛酸运维路，运维工程师如何走得更好更远？ （转载）](https://mp.weixin.qq.com/s?__biz=MjM5NTk0MTM1Mw==&mid=2650652005&idx=2&sn=595463e89c304b85e218f4bcfe5a6df5&chksm=bef9c3e3898e4af5d1c9ec32b88eb6d50a79c1bb4385823410b9c3ee484af6ebc009ce17ba1c&scene=132#wechat_redirect-----------------------------------%E8%BE%9B%E9%85%B8%E8%BF%90%E7%BB%B4%E8%B7%AF%EF%BC%8C%E8%BF%90%E7%BB%B4%E5%B7%A5%E7%A8%8B%E5%B8%88%E5%A6%82%E4%BD%95%E8%B5%B0%E5%BE%97%E6%9B%B4%E5%A5%BD%E6%9B%B4%E8%BF%9C%EF%BC%9Fhttps://blog.51cto.com/lang8027/2581648)
 
