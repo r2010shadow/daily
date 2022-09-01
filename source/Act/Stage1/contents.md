@@ -4,7 +4,7 @@
 
 [TOC]
 
-# Stage1 Markdown
+## Stage1 Markdown
 
 :star:**markdown自学文档，按提示实践，注意文字后面的符号。**
 
@@ -23,7 +23,7 @@
 
 ---
 
-### Mession2 表格图片超链接
+## Mession2 表格图片超链接
 
 插入图片用右键 ![]()
 
@@ -39,7 +39,7 @@
 
 ---
 
-#### Mession3  缩进
+## Mession3  缩进
 
 - 缩进用减号 -
 
@@ -49,7 +49,7 @@
 
 ---
 
-##### Mession4 居中显示
+## Mession4 居中显示
 
 `<h1 align = "center">标题居中的方法</h1>`
 
