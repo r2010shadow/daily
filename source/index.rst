@@ -11,7 +11,10 @@
    :caption: 内容:
 
    Dialog/index
-   Plan/index 
+   Plan/index
+   Do/index
+   Check/index
+   Act/index 
 
 Indices and tables
 ==================
