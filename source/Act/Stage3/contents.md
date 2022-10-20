@@ -8,20 +8,19 @@
 
 冷备份是将关键性文件拷贝到另外的位置，可以根据重要性文件克隆一份数据库。
 
-> 冷备份还原注意事项：
->  两台数据库服务器的操作系统必须是同构的
->
-> （即：aix->aix或者linux->linux），不能是异构的（linux->aix），
->
-> 否则是没有用的。
->
-> 如果是异构的，那么一般采用数据泵的方式。
+冷备份还原注意事项：
+ 两台数据库服务器的操作系统必须是同构的
+
+（即：aix->aix或者linux->linux），不能是异构的（linux->aix），
+
+否则是没有用的。如果是异构的，那么一般采用数据泵的方式。
 
 1.编写备份脚本
 
 通过操作系统的命令来实现的备份机制：cp、scp
 
-```
+
+
 1.1 查询所有的文件所在位置
 
 （数据文件，控制文件，参数文件，重做日志文件，归档日志文件，初始化参数文件，密码文件）
@@ -41,7 +40,8 @@
 直接拷贝oracle目录下的admin、oradata(datafile， controlfile，redo)、flash_recovery_area三个文件夹，
 
 db_1目录下database(PWDfile、pfile)、dbs(spfile)、NETWORK/ADMIN(listener.ora、tnsnames.ora)，到其他存储实现备份。
-```
+
+
 
 ```sql
 # 查看字符集，最好将字符集保持一致
@@ -139,3 +139,318 @@ ls -lSr /test | awk '{print "mv " $NF" /tmp/test/t"NR".conf"}' | bash
 3. alter database rename file 'u01/xxx.DBF'  to 'u02/xxx.DBF'    (u01磁盘损坏)
 4. alter database open
 ```
+
+## ORACLE热备份
+
+### 一、热备份
+
+初始化日志：重置redo日志号
+首先关闭数据库
+
+```
+SQL> shutdown immediate;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+```
+
+进入到mount状态
+
+```
+SQL> startup mount;
+ORACLE instance started.
+Total System Global Area 838860800 bytes
+Fixed Size 8626240 bytes
+Variable Size 348131264 bytes
+Database Buffers 473956352 bytes
+Redo Buffers 8146944 bytes
+Database mounted.
+```
+
+
+
+查看当前redo log号
+
+```
+SQL> archive log list;
+Database log mode Archive Mode
+Automatic archival Enabled
+Archive destination /u01/app/oracle/archive2/
+Oldest online log sequence 4
+Next log sequence to archive 6
+Current log sequence 6
+```
+
+
+
+重置redo log号
+
+```
+SQL> recover database until cancel;
+Media recovery complete.
+
+SQL> alter database open resetlogs;
+Database altered.
+```
+
+
+
+重置完成
+
+```
+SQL> archive log list;
+Database log mode Archive Mode
+Automatic archival Enabled
+Archive destination /u01/app/oracle/archive2/
+Oldest online log sequence 1
+Next log sequence to archive 1
+Current log sequence 1
+SQL>
+```
+
+
+
+创建测试数据
+
+创建hr的t1表，并插入两行数据
+
+```
+SQL> create table hr.t1(id number);
+Table created.
+
+SQL> insert into hr.t1 values(1);
+1 row created.
+
+SQL> insert into hr.t1 values(2);
+1 row created.
+
+SQL> commit;
+Commit complete.
+```
+
+
+
+执行日志切换
+
+```
+SQL> alter system switch logfile;
+System altered.
+
+切换后redo log号变为了2.
+
+SQL> archive log list;
+Database log mode Archive Mode
+Automatic archival Enabled
+Archive destination /u01/app/oracle/archive2/
+Oldest online log sequence 1
+Next log sequence to archive 2
+Current log sequence 2
+SQL>
+```
+
+
+
+查看归档记录：归档生成
+
+此时我们再插入两条数据：
+
+```
+SQL> insert into hr.t1 values(3);
+1 row created.
+SQL> insert into hr.t1 values(4);
+1 row created.
+SQL> commit;
+Commit complete.
+```
+
+
+
+日志切换，查看redo备份，
+
+```
+SQL> alter system switch logfile;
+System altered.
+SQL> host ls -l /u01/app/oracle/archive2/
+total 1336
+-rw-r----- 1 oracle oinstall 1343488 Feb 14 04:34 arch_orcl_1_1_1064464371.dbf
+-rw-r----- 1 oracle oinstall 22016 Feb 14 06:43 arch_orcl_1_2_1064471384.dbf
+```
+
+
+
+redo log号更新
+
+```		
+SQL> archive log list;
+Database log mode Archive Mode
+Automatic archival Enabled
+Archive destination /u01/app/oracle/archive2/
+Oldest online log sequence 1
+Next log sequence to archive 3
+Current log sequence 3
+```
+
+
+
+初始化日志完成，开始备份
+
+开始备份
+开始备份之前我们查看一下当前的scn号
+
+```
+SQL> select current_scn from v$database;
+CURRENT_SCN
+.----------
+2350352
+SQL>
+
+从当前scn号开始进行备份
+
+SQL> alter database begin backup;
+Database altered.
+
+查看状态：ACTIVE
+
+SQL> select * from v$backup;
+FILE# STATUS CHANGE# TIME CON_ID
+.---------- ------------------ ---------- ------------------- ----------
+1 ACTIVE 2350453 2021-02-14 06:51:33 0
+2 ACTIVE 2350453 2021-02-14 06:51:33 0
+3 ACTIVE 2350453 2021-02-14 06:51:33 0
+4 ACTIVE 2350453 2021-02-14 06:51:33 0
+5 ACTIVE 2350453 2021-02-14 06:51:33 0
+7 ACTIVE 2350453 2021-02-14 06:51:33 0
+8 ACTIVE 2350453 2021-02-14 06:51:33 0
+9 ACTIVE 2350453 2021-02-14 06:51:33 0
+10 ACTIVE 2350453 2021-02-14 06:51:33 0
+11 ACTIVE 2350453 2021-02-14 06:51:33 0
+10 rows selected.
+SQL>
+
+此时scn号已经改变
+
+SQL> select current_scn from v$database;
+CURRENT_SCN
+.-----------
+2350489
+SQL>
+
+确认当前数据文件的路径（执行命令，以实际路径为主）
+
+SQL> select name from v$datafile;
+NAME
+.--------------------------------------------------------------------------------
+/u01/app/oracle/oradata/orcl/system01.dbf
+/u01/app/oracle/oradata/orcl/undotbs01.dbf
+/u01/app/oracle/oradata/orcl/sysaux01.dbf
+/u01/app/oracle/oradata/orcl/testbs_01.dbf
+/u01/app/oracle/oradata/orcl/undotbs02.dbf
+/u01/app/oracle/oradata/orcl/users01.dbf
+/u01/app/oracle/oradata/orcl/testbs_02.dbf
+/u01/app/oracle/oradata/orcl/testbs_03.dbf
+/u01/app/oracle/oradata/orcl/bigtbs_01.dbf
+/u01/app/oracle/oradata/orcl/data1_1.dbf
+10 rows selected.
+SQL>
+```
+
+
+
+创建备份目录：
+
+[oracle@MiWiFi-R4CM-srv archive2]$ mkdir -p $ORACLE_BASE/hot/fulldb_20210214/archive/
+
+将除了控制文件外的所有数据文件进行拷贝到我们创建的备份目录：（控制文件使用二进制备份）
+
+```
+[oracle@MiWiFi-R4CM-srv archive2]$ cp $ORACLE_BASE/oradata/orcl/*.dbf $ORACLE_BASE/hot/fulldb_20210214/archive/
+[oracle@MiWiFi-R4CM-srv archive2]$ cp $ORACLE_BASE/oradata/orcl/redo0* $ORACLE_BASE/hot/fulldb_20210214/archive/
+```
+
+
+
+此时的备份目录：
+
+备份控制文件：（备份二进制的控制文件）
+
+```
+SQL> alter database backup controlfile to ‘$ORACLE_BASE/hot/fulldb_20210214/archive/control01.ctl’;
+Database altered.
+
+备份成创建语句的文件：
+
+SQL> alter database backup controlfile to trace as ‘$ORACLE_BASE/hot/fulldb_20210214/ctl_create.sql’;
+Database altered.
+SQL>
+```
+
+
+
+此时的备份目录状态：
+
+
+此时我们的数据文件已经备份完成，结束数据文件的备份，还需要备份归档文件和密码文件以及spfile
+
+结束数据文件的备份
+
+```
+SQL> alter database end backup;
+Database altered.
+SQL>
+
+记录一下redo log号
+
+SQL> select current_scn from v$database;
+CURRENT_SCN
+.-----------
+2351333
+SQL>
+
+备份归档日志
+
+SQL> srchive log list;
+SP2-0734: unknown command beginning “srchive lo…” - rest of line ignored.
+SQL> archive log list;
+Database log mode Archive Mode
+Automatic archival Enabled
+Archive destination /u01/app/oracle/archive2/
+Oldest online log sequence 1
+Next log sequence to archive 3
+Current log sequence 3
+
+切换日志
+
+SQL> alter system switch logfile;
+System altered.
+
+SQL> archive log list;
+Database log mode Archive Mode
+Automatic archival Enabled
+Archive destination /u01/app/oracle/archive2/
+Oldest online log sequence 2
+Next log sequence to archive 4
+Current log sequence 4
+SQL>
+```
+
+
+
+将归档日志进行拷贝到备份目录，进行备份：
+
+```		
+SQL> host ls -l /u01/app/oracle/archive2/
+total 7604
+-rw-r----- 1 oracle oinstall 1343488 Feb 14 04:34 arch_orcl_1_1_1064464371.dbf
+-rw-r----- 1 oracle oinstall 22016 Feb 14 06:43 arch_orcl_1_2_1064471384.dbf
+-rw-r----- 1 oracle oinstall 6417920 Feb 14 07:11 arch_orcl_1_3_1064471384.dbf
+SQL> host cp /u01/app/oracle/archive2/* $ORACLE_BASE/hot/fulldb_20210214/archive/
+SQL>
+
+最后备份密码文件和spfile
+
+[oracle@MiWiFi-R4CM-srv archive2]$ cp $ORACLE_HOME/dbs/spfile* $ORACLE_BASE/hot/fulldb_20210214/archive/
+[oracle@MiWiFi-R4CM-srv archive2]$ cp $ORACLE_HOME/dbs/orapw* $ORACLE_BASE/hot/fulldb_20210214/archive/
+```
+
+所有备份完成
+
